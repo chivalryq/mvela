@@ -22,11 +22,11 @@ const (
 
 var (
 	CachePath      = path.Join(VelaDir(), "cache")
-	CacheChartTemp = func() string { return path.Join(VelaDir(), "vela-core-%s.tgz") }()
+	CacheChartTemp = func() string { return path.Join(CachePath, "vela-core-%s.tgz") }()
 )
 
 func init() {
-	err := os.MkdirAll(CachePath, os.ModeDir)
+	err := os.MkdirAll(CachePath, 0755)
 	if err != nil {
 		panic(err)
 	}
