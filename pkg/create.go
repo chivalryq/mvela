@@ -26,9 +26,16 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 
 			// create k3d
 			runConfig := GetClusterRunConfig()
+
+			// check cluster existence
+			if _, err = k3dClient.ClusterGet(cmd.Context(), runtimes.SelectedRuntime, &runConfig.Cluster); err == nil {
+				klog.Fatal("Fail to create a cluster because one cluster already exists")
+				return
+			}
+
 			err = k3dClient.ClusterRun(cmd.Context(), runtimes.SelectedRuntime, &runConfig)
 			if err != nil {
-				klog.ErrorS(err, "create cluster error")
+				klog.ErrorS(err, "Fail to create cluster")
 				return
 			}
 			klog.Info("Successfully create cluster")
@@ -36,7 +43,7 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 			// kubeconfig
 			kubeconfigOpt := k3dClient.WriteKubeConfigOptions{UpdateExisting: false, OverwriteExisting: true, UpdateCurrentContext: false}
 			if _, err = k3dClient.KubeconfigGetWrite(cmd.Context(), runtimes.SelectedRuntime, &runConfig.Cluster, cmdConfig.KubeconfigOpts.Output, &kubeconfigOpt); err != nil {
-				klog.ErrorS(err, "fail to write kubeconfig")
+				klog.ErrorS(err, "Fail to write kubeconfig")
 			}
 			klog.Info("Successfully generate kubeconfig file at ", cmdConfig.KubeconfigOpts.Output)
 			if cmdConfig.KubeconfigOpts.UpdateEnvironment {

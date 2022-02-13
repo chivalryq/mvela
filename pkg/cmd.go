@@ -39,6 +39,7 @@ func NewCmdMVela() *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&flag.ConfigFile, "config", "c", "", "set configuration file")
 	rootCmd.AddCommand(
 		CmdCreate(&cmdConfig),
+		CmdDelete(&cmdConfig),
 	)
 
 	cobra.OnInitialize(func() {
