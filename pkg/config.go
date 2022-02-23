@@ -25,7 +25,7 @@ var (
 	velaDir string
 )
 
-func VelaDir() string{
+func VelaDir() string {
 	if velaDir != "" {
 		return velaDir
 	}
@@ -38,7 +38,7 @@ func VelaDir() string{
 }
 
 func initDefaultConfig() (Config, error) {
-	velaDir:=VelaDir()
+	velaDir := VelaDir()
 	return Config{
 		ApiVersion:     "mvela.oam.dev/v1alpha1",
 		Kind:           "Simple",
@@ -134,6 +134,6 @@ func getClusterConfig() k3d.Cluster {
 	clusterConfig.Nodes = append(clusterConfig.Nodes, &serverNode)
 
 	// opts
-
 	return clusterConfig
+
 }
