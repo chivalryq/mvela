@@ -1,6 +1,8 @@
 package pkg
 
 import (
+	"strings"
+
 	k3dClient "github.com/rancher/k3d/v5/pkg/client"
 	l "github.com/rancher/k3d/v5/pkg/logger"
 	"github.com/rancher/k3d/v5/pkg/runtimes"
@@ -18,24 +20,40 @@ func CmdDelete(cmdConfig *Config) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			l.Log().SetLevel(logrus.FatalLevel)
 
-			// create k3d
-			runConfig := GetClusterRunConfig()
+			clusterList, err := k3dClient.ClusterList(cmd.Context(), runtimes.SelectedRuntime)
+			if err != nil {
+				klog.ErrorS(err, "Fail to list clusters")
+				return
+			}
+
+			if len(clusterList) == 0 {
+				klog.Error("No clusters to delete, run `mvela create` first")
+			}
+
+			mvelaClusters := []*k3d.Cluster{}
+			for _, c := range clusterList {
+				if isMvelaCluster(c.Name) {
+					mvelaClusters = append(mvelaClusters, c)
+				}
+			}
 
 			// check cluster existence
-			if _, err = k3dClient.ClusterGet(cmd.Context(), runtimes.SelectedRuntime, &runConfig.Cluster); err != nil {
-				klog.Fatal("Fail to delete cluster because it doesn't exist")
-				return
-			}
+			for _, r := range mvelaClusters {
+				err = k3dClient.ClusterDelete(cmd.Context(), runtimes.SelectedRuntime, r, k3d.ClusterDeleteOpts{
+					SkipRegistryCheck: false,
+				})
+				if err != nil {
+					klog.ErrorS(err, "Fail to delete cluster")
+					return
+				}
+				klog.Infof("Successfully delete cluster: %s", r.Name)
 
-			err = k3dClient.ClusterDelete(cmd.Context(), runtimes.SelectedRuntime, &runConfig.Cluster,k3d.ClusterDeleteOpts{
-				SkipRegistryCheck: false,
-			})
-			if err != nil {
-				klog.ErrorS(err, "Fail to delete cluster")
-				return
 			}
-			klog.Info("Successfully delete cluster")
 		},
 	}
 	return &cmd
+}
+
+func isMvelaCluster(name string) bool {
+	return strings.Contains(name, "mvela-cluster")
 }

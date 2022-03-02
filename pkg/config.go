@@ -2,16 +2,13 @@ package pkg
 
 import (
 	_ "embed"
-	"fmt"
+	"errors"
 	"os"
 	"path"
 
 	"github.com/spf13/viper"
 
-	"github.com/docker/go-connections/nat"
-	"github.com/rancher/k3d/v5/pkg/client"
 	config "github.com/rancher/k3d/v5/pkg/config/v1alpha4"
-	k3d "github.com/rancher/k3d/v5/pkg/types"
 	"k8s.io/klog/v2"
 )
 
@@ -20,10 +17,8 @@ const (
 	k3dPrefix  string = "k3d"
 )
 
-var (
-	// VelaDir is ~/.vela
-	velaDir string
-)
+// VelaDir is ~/.vela
+var velaDir string
 
 func VelaDir() string {
 	if velaDir != "" {
@@ -44,7 +39,7 @@ func initDefaultConfig() (Config, error) {
 		Kind:           "Simple",
 		ManagedCluster: 1,
 		KubeconfigOpts: KubeconfigOption{
-			Output:            path.Join(velaDir, "config", "k3d-kubeconfig"),
+			Output:            path.Join(velaDir, "kubeConfig"),
 			UpdateEnvironment: true,
 		},
 	}, nil
@@ -53,27 +48,30 @@ func initDefaultConfig() (Config, error) {
 func ReadConfig(ConfigFile string) (Config, error) {
 	res := Config{}
 	if ConfigFile == "" {
-		return initDefaultConfig()
+		_, err := os.Stat("example/conf.yaml")
+		if err != nil && errors.Is(err, os.ErrNotExist) {
+			return initDefaultConfig()
+		}
+		ConfigFile = "example/conf.yaml"
 	}
-	var viperCfg viper.Viper
-	err := viperCfg.Unmarshal(&res)
+	viper.SetConfigFile(ConfigFile)
+	viper.ReadInConfig()
+	err := viper.GetViper().Unmarshal(&res)
 	if err != nil {
 		return Config{}, err
 	}
-	return res, nil
+
+	return CompleteConfig(res), nil
 }
 
-func getClusterCreateOpts() k3d.ClusterCreateOpts {
-	clusterCreateOpts := k3d.ClusterCreateOpts{
-		GlobalLabels: map[string]string{}, // empty init
-		GlobalEnv:    []string{},          // empty init
+// CompleteConfig validate and complete the config
+func CompleteConfig(origin Config) Config {
+	complete := origin
+	if origin.ManagedCluster < 1 {
+		klog.Infof("Invalid configuration for managedCluster field: %d, set to 1", origin.ManagedCluster)
+		complete.ManagedCluster = 1
 	}
-
-	// ensure, that we have the default object labels
-	for k, v := range k3d.DefaultRuntimeLabels {
-		clusterCreateOpts.GlobalLabels[k] = v
-	}
-	return clusterCreateOpts
+	return complete
 }
 
 func getKubeconfigOptions() config.SimpleConfigOptionsKubeconfig {
@@ -84,56 +82,17 @@ func getKubeconfigOptions() config.SimpleConfigOptionsKubeconfig {
 	return opts
 }
 
-func GetClusterRunConfig() config.ClusterConfig {
-	cluster := getClusterConfig()
-	createOpts := getClusterCreateOpts()
-	kubeconfigOpts := getKubeconfigOptions()
-
-	return config.ClusterConfig{
-		Cluster:           cluster,
-		ClusterCreateOpts: createOpts,
-		KubeconfigOpts:    kubeconfigOpts,
+func GetClusterRunConfig(managedCluster int) []config.ClusterConfig {
+	runConfigs := []config.ClusterConfig{}
+	for ord := 0; ord < managedCluster; ord++ {
+		cluster := getClusterConfig(ord)
+		createOpts := getClusterCreateOpts()
+		kubeconfigOpts := getKubeconfigOptions()
+		runConfigs = append(runConfigs, config.ClusterConfig{
+			Cluster:           cluster,
+			ClusterCreateOpts: createOpts,
+			KubeconfigOpts:    kubeconfigOpts,
+		})
 	}
-}
-
-func getClusterConfig() k3d.Cluster {
-	// network
-	k3dNetwork := k3d.ClusterNetwork{
-		Name:     fmt.Sprintf("%s-%s", k3dPrefix, configName),
-		External: false,
-	}
-
-	// api
-	kubeAPIExposureOpts := k3d.ExposureOpts{
-		Host: k3d.DefaultAPIHost,
-	}
-	kubeAPIExposureOpts.Port = k3d.DefaultAPIPort
-	kubeAPIExposureOpts.Binding = nat.PortBinding{
-		HostIP:   k3d.DefaultAPIHost,
-		HostPort: "6443",
-	}
-
-	// fill cluster config
-	clusterConfig := k3d.Cluster{
-		Name:    "mvela-cluster",
-		Network: k3dNetwork,
-		KubeAPI: &kubeAPIExposureOpts,
-	}
-
-	klog.Info("disabling load balancer")
-
-	// nodes
-	clusterConfig.Nodes = []*k3d.Node{}
-
-	serverNode := k3d.Node{
-		Name:       client.GenerateNodeName(clusterConfig.Name, k3d.ServerRole, 0),
-		Role:       k3d.ServerRole,
-		Image:      "rancher/k3s:latest",
-		ServerOpts: k3d.ServerOpts{},
-	}
-	clusterConfig.Nodes = append(clusterConfig.Nodes, &serverNode)
-
-	// opts
-	return clusterConfig
-
+	return runConfigs
 }

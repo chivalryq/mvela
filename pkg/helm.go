@@ -3,16 +3,17 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
 	"io"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/klog/v2"
 	"log"
 	"net/http"
 	"os"
 	"path"
+
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/storage/driver"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -26,7 +27,7 @@ var (
 )
 
 func init() {
-	err := os.MkdirAll(CachePath, 0755)
+	err := os.MkdirAll(CachePath, 0o755)
 	if err != nil {
 		panic(err)
 	}
@@ -77,6 +78,7 @@ func prepareChart(semver string) (string, error) {
 
 func InstallVelaCore(opts HelmOpts) error {
 	klog.Info("Installing KubeVela Helm chart, please hold...")
+	CancelProxy()
 	chartPath, err := prepareChart(opts.Version)
 	if err != nil {
 		klog.ErrorS(err, "fail to prepare vela-core chart")
@@ -91,20 +93,29 @@ func InstallVelaCore(opts HelmOpts) error {
 	releaseNamespace := "vela-system"
 
 	actionConfig := new(action.Configuration)
-	var settings = cli.New()
+	settings := cli.New()
 	settings.SetNamespace(releaseNamespace)
 	helmDriver := os.Getenv("HELM_DRIVER")
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), helmDriver, debug); err != nil {
 		log.Fatal(err)
 	}
 
-	iCli := action.NewInstall(actionConfig)
-	iCli.Namespace = releaseNamespace
-	iCli.ReleaseName = releaseName
-	iCli.CreateNamespace = true
-	_, err = iCli.Run(chart, nil)
-	if err != nil {
-		klog.ErrorS(err, "fail to run helm install action")
+	uCLI := action.NewUpgrade(actionConfig)
+	uCLI.Namespace = releaseNamespace
+	uCLI.Install = false
+	_, err = uCLI.Run(releaseName, chart, nil)
+	if err != nil && errors.As(err, &driver.ErrReleaseNotFound) {
+		klog.Info("Helm release not found, perform installing now...")
+		iCLI := action.NewInstall(actionConfig)
+		iCLI.Namespace = releaseNamespace
+		iCLI.ReleaseName = releaseName
+		iCLI.CreateNamespace = true
+		_, err = iCLI.Run(chart, nil)
+		if err != nil {
+			klog.ErrorS(err, "Fail to run install install action")
+		}
+	} else if err != nil {
+		klog.Info(err, "Fail to run Helm upgrade action")
 		return err
 	}
 	return nil
@@ -117,4 +128,12 @@ func debug(format string, v ...interface{}) {
 
 func chartCachePathForSemver(semver string) string {
 	return path.Join(VelaDir(), fmt.Sprintf("vela-core-%s.tgz", semver))
+}
+
+func CancelProxy() {
+	klog.Info("Setting proxy to None to install Helm chart")
+	klog.Info("setting HTTP_PROXY to empty")
+	os.Setenv("HTTP_PROXY", "")
+	klog.Info("setting HTTPS_PROXY to empty")
+	os.Setenv("HTTPS_PROXY", "")
 }

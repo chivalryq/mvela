@@ -1,6 +1,6 @@
 apiVersion: mvela.oam.dev/v1alpha1
 kind: Simple
-managedCluster: 0
+managedCluster: 2
 kubeconfigOpts:
-  output: ~/.vela/config/mvela.yaml
+  output: /Users/qiaozp/.vela/kubeConfig
   updateEnvironment: true

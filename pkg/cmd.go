@@ -27,13 +27,14 @@ func NewCmdMVela() *cobra.Command {
 		Short: "mvela is a tool helps run KubeVela in Docker",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			cmdConfig, err = ReadConfig(flag.ConfigFile)
+
 			if err != nil {
-				klog.Error("fail to read config file")
+				klog.ErrorS(err, "fail to read config file")
 				os.Exit(1)
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("reserved")
+			fmt.Println("reserved for merge in vela CLI")
 		},
 	}
 	rootCmd.PersistentFlags().StringVarP(&flag.ConfigFile, "config", "c", "", "set configuration file")
@@ -42,8 +43,6 @@ func NewCmdMVela() *cobra.Command {
 		CmdDelete(&cmdConfig),
 	)
 
-	cobra.OnInitialize(func() {
-	})
 	return &rootCmd
 }
 
