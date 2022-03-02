@@ -48,6 +48,8 @@ func CmdDelete(cmdConfig *Config) *cobra.Command {
 				}
 				klog.Infof("Successfully delete cluster: %s", r.Name)
 
+				// delete Kubeconfig
+
 			}
 		},
 	}

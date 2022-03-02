@@ -132,8 +132,10 @@ func chartCachePathForSemver(semver string) string {
 
 func CancelProxy() {
 	klog.Info("Setting proxy to None to install Helm chart")
-	klog.Info("setting HTTP_PROXY to empty")
+	klog.Info("setting HTTP_PROXY/http_proxy to empty")
 	os.Setenv("HTTP_PROXY", "")
-	klog.Info("setting HTTPS_PROXY to empty")
+	os.Setenv("http_proxy", "")
+	klog.Info("setting HTTPS_PROXY/https_proxy to empty")
 	os.Setenv("HTTPS_PROXY", "")
+	os.Setenv("https_proxy", "")
 }
