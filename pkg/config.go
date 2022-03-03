@@ -82,11 +82,12 @@ func getKubeconfigOptions() config.SimpleConfigOptionsKubeconfig {
 	return opts
 }
 
-func GetClusterRunConfig(managedCluster int) []config.ClusterConfig {
+func GetClusterRunConfig(cmdConfig Config) []config.ClusterConfig {
+	managedCluster := cmdConfig.ManagedCluster
 	runConfigs := []config.ClusterConfig{}
 	for ord := 0; ord < managedCluster; ord++ {
 		cluster := getClusterConfig(ord)
-		createOpts := getClusterCreateOpts()
+		createOpts := getClusterCreateOpts(cmdConfig.Registries)
 		kubeconfigOpts := getKubeconfigOptions()
 		runConfigs = append(runConfigs, config.ClusterConfig{
 			Cluster:           cluster,

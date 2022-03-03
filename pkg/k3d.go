@@ -6,18 +6,29 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/rancher/k3d/v5/pkg/client"
 	k3d "github.com/rancher/k3d/v5/pkg/types"
+	"github.com/rancher/k3d/v5/pkg/types/k3s"
 )
 
-func getClusterCreateOpts() k3d.ClusterCreateOpts {
+type registry struct {
+	Create *k3d.Registry   `yaml:"create,omitempty" json:"create,omitempty"`
+	Use    []*k3d.Registry `yaml:"use,omitempty" json:"use,omitempty"`
+	Config *k3s.Registry   `yaml:"config,omitempty" json:"config,omitempty"`
+}
+
+func getClusterCreateOpts(r k3s.Registry) k3d.ClusterCreateOpts {
 	clusterCreateOpts := k3d.ClusterCreateOpts{
 		GlobalLabels: map[string]string{}, // empty init
 		GlobalEnv:    []string{},          // empty init
+		Registries: registry{
+			Config: &r,
+		},
 	}
 
 	// ensure, that we have the default object labels
 	for k, v := range k3d.DefaultRuntimeLabels {
 		clusterCreateOpts.GlobalLabels[k] = v
 	}
+
 	return clusterCreateOpts
 }
 

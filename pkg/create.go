@@ -43,9 +43,10 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 			l.Log().SetLevel(logrus.FatalLevel)
 
 			// create k3d
-			runConfigs := GetClusterRunConfig(cmdConfig.ManagedCluster)
+			runConfigs := GetClusterRunConfig(*cmdConfig)
 
 			// Check cluster existence and create all cluster based on flag
+			klog.Info("Making sure directory exists", cmdConfig.KubeconfigOpts.Output)
 			err := os.MkdirAll(cmdConfig.KubeconfigOpts.Output, 0o755)
 			if err != nil {
 				klog.ErrorS(err, "Fail to create directory to save kubeconfig")
@@ -53,6 +54,7 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 
 			// check cluster existence
 			for ord, r := range runConfigs {
+				klog.Infof("Creating Cluster No.%d: %s", ord, r.Cluster.Name)
 				RunClusterIfNotExist(cmd.Context(), r)
 				// kubeconfig
 				KubeConfigOutput := path.Join(cmdConfig.KubeconfigOpts.Output, r.Cluster.Name)
@@ -69,7 +71,7 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 					if err != nil {
 						klog.ErrorS(err, "Fail to Install helm chart, you can install manually later")
 					} else {
-						fmt.Println("Successfully installed vela-core helm chart")
+						klog.Info("Successfully installed vela-core helm chart")
 					}
 				}
 			}
@@ -158,9 +160,9 @@ func printGuide(cfg Config) {
 		klog.Infof("Set KUBECONFIG=%s\n to connect to cluster", controlPlaneKubeConf)
 	}
 
-	emoji.Fprintf(os.Stdout, ":magnifying glass tilted left: See usable components, run `vela components`\n")
+	emoji.Fprintf(os.Stdout, ":telescope: See usable components, run `vela components`\n")
 	if cfg.ManagedCluster > 1 {
 		internalCfg := path.Join(cfg.KubeconfigOpts.Output, "mvela-cluster-1-internal")
-		emoji.Fprintln(os.Stdout, "link: Join sub-clusters, run `vela cluster join %s`, or more with other number\n", internalCfg)
+		emoji.Fprintf(os.Stdout, ":link: Join sub-clusters, run `vela cluster join %s`, or more with other number\n", internalCfg)
 	}
 }

@@ -4,3 +4,9 @@ managedCluster: 2
 kubeconfigOpts:
   output: /Users/qiaozp/.vela/kubeConfig
   updateEnvironment: true
+registries:
+  config:
+    mirrors:
+      "my.company.registry":
+        endpoint:
+          - http://my.company.registry:5000
