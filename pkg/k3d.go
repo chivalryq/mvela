@@ -7,6 +7,7 @@ import (
 	"github.com/rancher/k3d/v5/pkg/client"
 	k3d "github.com/rancher/k3d/v5/pkg/types"
 	"github.com/rancher/k3d/v5/pkg/types/k3s"
+	"k8s.io/klog/v2"
 )
 
 type registry struct {
@@ -16,6 +17,7 @@ type registry struct {
 }
 
 func getClusterCreateOpts(r k3s.Registry) k3d.ClusterCreateOpts {
+	InfoMirrors(r)
 	clusterCreateOpts := k3d.ClusterCreateOpts{
 		GlobalLabels: map[string]string{}, // empty init
 		GlobalEnv:    []string{},          // empty init
@@ -79,4 +81,10 @@ func getClusterConfig(ordinal int) k3d.Cluster {
 	// opts
 
 	return clusterConfig
+}
+
+func InfoMirrors(registry k3s.Registry) {
+	for k, e := range registry.Mirrors {
+		klog.Infof("Using registries %s -> %v\n", k, e)
+	}
 }

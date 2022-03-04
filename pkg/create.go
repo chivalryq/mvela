@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -46,7 +47,7 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 			runConfigs := GetClusterRunConfig(*cmdConfig)
 
 			// Check cluster existence and create all cluster based on flag
-			klog.Info("Making sure directory exists", cmdConfig.KubeconfigOpts.Output)
+			klog.Infof("Making sure directory exists %s\n", cmdConfig.KubeconfigOpts.Output)
 			err := os.MkdirAll(cmdConfig.KubeconfigOpts.Output, 0o755)
 			if err != nil {
 				klog.ErrorS(err, "Fail to create directory to save kubeconfig")
@@ -63,7 +64,11 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 				// Update KUBECONFIG if control plane
 				if isControlPlane(ord) {
 					if cmdConfig.KubeconfigOpts.UpdateEnvironment {
-						_ = os.Setenv("KUBECONFIG", KubeConfigOutput)
+						err = os.Setenv("KUBECONFIG", KubeConfigOutput)
+						if err != nil {
+							klog.ErrorS(err, "Fail to set environment var KUBECONFIG")
+						}
+
 						controlPlaneKubeConf = KubeConfigOutput
 					}
 					// install helm chart
@@ -139,12 +144,14 @@ func generateInternal(ctx context.Context, kubeconfigFile string, clusterName st
 	var containerIP string
 	cs := networks.Containers
 	for _, c := range cs {
-		if c.Name == fmt.Sprintf("%s-server-0", clusterName) {
+		if c.Name == fmt.Sprintf("k3d-%s-server-0", clusterName) {
 			containerIP = strings.TrimSuffix(c.IPv4Address, "/16")
 		}
 	}
 	kubeConfig := string(fb)
-	internalKubeConfig := strings.Replace(kubeConfig, "0.0.0.0", containerIP, 1)
+	re := regexp.MustCompile(`0.0.0.0:\d{4}`)
+	internalKubeConfig := re.ReplaceAllString(kubeConfig, fmt.Sprintf("%s:6443", containerIP))
+
 	err = os.WriteFile(fmt.Sprintf("%s-internal", kubeconfigFile), []byte(internalKubeConfig), 0o600)
 	if err != nil {
 		klog.ErrorS(err, "Fail to write internal kubeconfig", "cluster", clusterName)
@@ -163,6 +170,8 @@ func printGuide(cfg Config) {
 	emoji.Fprintf(os.Stdout, ":telescope: See usable components, run `vela components`\n")
 	if cfg.ManagedCluster > 1 {
 		internalCfg := path.Join(cfg.KubeconfigOpts.Output, "mvela-cluster-1-internal")
+		subCfg := path.Join(cfg.KubeconfigOpts.Output, "mvela-cluster-1")
 		emoji.Fprintf(os.Stdout, ":link: Join sub-clusters, run `vela cluster join %s`, or more with other number\n", internalCfg)
+		emoji.Fprintf(os.Stdout, ":key: Check sub-clusters, run `KUBECONFIG=%s kubectl get pod -A`, or more with other number\n", subCfg)
 	}
 }

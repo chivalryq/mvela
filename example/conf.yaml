@@ -5,8 +5,7 @@ kubeconfigOpts:
   output: /Users/qiaozp/.vela/kubeConfig
   updateEnvironment: true
 registries:
-  config:
-    mirrors:
-      "my.company.registry":
-        endpoint:
-          - http://my.company.registry:5000
+  mirrors:
+    docker.io:
+      endpoint:
+        - https://hub-mirror.c.163.com

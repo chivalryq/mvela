@@ -6,9 +6,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/spf13/viper"
-
 	config "github.com/rancher/k3d/v5/pkg/config/v1alpha4"
+	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 )
 
@@ -53,12 +52,20 @@ func ReadConfig(ConfigFile string) (Config, error) {
 			return initDefaultConfig()
 		}
 		ConfigFile = "example/conf.yaml"
+		klog.Infof("Using config file: %s\n", ConfigFile)
 	}
-	viper.SetConfigFile(ConfigFile)
-	viper.ReadInConfig()
-	err := viper.GetViper().Unmarshal(&res)
+	b, err := os.ReadFile(ConfigFile)
 	if err != nil {
-		return Config{}, err
+		klog.ErrorS(err, "Fail to read config file, gonna use default configs")
+		return initDefaultConfig()
+	}
+	// viper.SetConfigFile(ConfigFile)
+	// viper.ReadInConfig()
+	err = yaml.Unmarshal(b, &res)
+	// err := viper.GetViper().Unmarshal(&res)
+	if err != nil {
+		klog.ErrorS(err, "Fail to unmarshal config file, gonna use default configs")
+		return initDefaultConfig()
 	}
 
 	return CompleteConfig(res), nil
