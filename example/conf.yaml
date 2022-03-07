@@ -6,6 +6,11 @@ kubeconfigOpts:
   updateEnvironment: true
 registries:
   mirrors:
-    docker.io:
+    "docker.io":
       endpoint:
         - https://hub-mirror.c.163.com
+storage:
+  #endpoint: mysql://user:passwd@host:PORT/DBNAME
+  #cert_file: /path/to/client.crt
+  #key_file: /path/to/client.key
+

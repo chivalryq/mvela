@@ -41,7 +41,7 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 		Short: "Create a all-in-one vela environment",
 		Long:  "Create a all-in-one vela image and run it",
 		Run: func(cmd *cobra.Command, args []string) {
-			l.Log().SetLevel(logrus.FatalLevel)
+			l.Log().SetLevel(logrus.DebugLevel)
 
 			// create k3d
 			runConfigs := GetClusterRunConfig(*cmdConfig)

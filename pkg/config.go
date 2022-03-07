@@ -7,7 +7,7 @@ import (
 	"path"
 
 	config "github.com/rancher/k3d/v5/pkg/config/v1alpha4"
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 )
 
@@ -54,19 +54,22 @@ func ReadConfig(ConfigFile string) (Config, error) {
 		ConfigFile = "example/conf.yaml"
 		klog.Infof("Using config file: %s\n", ConfigFile)
 	}
-	b, err := os.ReadFile(ConfigFile)
+	viper.SetConfigFile(ConfigFile)
+	err := bindEnv()
 	if err != nil {
-		klog.ErrorS(err, "Fail to read config file, gonna use default configs")
-		return initDefaultConfig()
+		klog.Error("Fail to bind environment to mvela config")
 	}
-	// viper.SetConfigFile(ConfigFile)
-	// viper.ReadInConfig()
-	err = yaml.Unmarshal(b, &res)
-	// err := viper.GetViper().Unmarshal(&res)
+	err = viper.ReadInConfig()
+
+	if err != nil {
+		klog.ErrorS(err, "Fail to read config file")
+	}
+	err = viper.Unmarshal(&res)
 	if err != nil {
 		klog.ErrorS(err, "Fail to unmarshal config file, gonna use default configs")
 		return initDefaultConfig()
 	}
+	reportConf(res)
 
 	return CompleteConfig(res), nil
 }
@@ -93,7 +96,7 @@ func GetClusterRunConfig(cmdConfig Config) []config.ClusterConfig {
 	managedCluster := cmdConfig.ManagedCluster
 	runConfigs := []config.ClusterConfig{}
 	for ord := 0; ord < managedCluster; ord++ {
-		cluster := getClusterConfig(ord)
+		cluster := getClusterConfig(ord, cmdConfig.Storage)
 		createOpts := getClusterCreateOpts(cmdConfig.Registries)
 		kubeconfigOpts := getKubeconfigOptions()
 		runConfigs = append(runConfigs, config.ClusterConfig{
@@ -103,4 +106,22 @@ func GetClusterRunConfig(cmdConfig Config) []config.ClusterConfig {
 		})
 	}
 	return runConfigs
+}
+
+func bindEnv() error {
+	if err := viper.BindEnv("storage.endpoint", "DATASTORE_ENDPOINT"); err != nil {
+		return err
+	}
+	if err := viper.BindEnv("storage.ca_file", "DATASTORE_CAFILE"); err != nil {
+		return err
+	}
+	if err := viper.BindEnv("storage.key_file", "DATASTORE_KEYFILE"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func reportConf(c Config) {
+	klog.Info("Gonna use configuration")
+	klog.Info(c)
 }

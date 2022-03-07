@@ -11,6 +11,7 @@ type Config struct {
 	KubeconfigOpts KubeconfigOption `json:"kubeconfigOpts" yaml:"kubeconfigOpts"`
 	HelmOpts       HelmOpts         `json:"helmOpts" yaml:"helmOpts"`
 	Registries     k3s.Registry     `json:"registries" yaml:"registries"`
+	Storage        Storage          `json:"storage"`
 }
 
 type KubeconfigOption struct {
@@ -22,4 +23,11 @@ type HelmOpts struct {
 	Type      string `json:"type" yaml:"type"`
 	ChartPath string `json:"chartPath" yaml:"chartPath"`
 	Version   string `json:"version" yaml:"version"`
+}
+
+type Storage struct {
+	Endpoint string `json:"endpoint" yaml:"endpoint"`
+	CAFile   string `json:"ca_file" yaml:"ca_file"`
+	CertFile string `json:"cert_file" yaml:"cert_file"`
+	KeyFile  string `json:"key_file" yaml:"key_file"`
 }

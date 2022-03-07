@@ -18,7 +18,7 @@ func CmdDelete(cmdConfig *Config) *cobra.Command {
 		Short: "Delete all-in-one vela environment",
 		Long:  "Delete all-in-one vela environment",
 		Run: func(cmd *cobra.Command, args []string) {
-			l.Log().SetLevel(logrus.FatalLevel)
+			l.Log().SetLevel(logrus.DebugLevel)
 
 			clusterList, err := k3dClient.ClusterList(cmd.Context(), runtimes.SelectedRuntime)
 			if err != nil {

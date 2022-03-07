@@ -34,8 +34,8 @@ func getClusterCreateOpts(r k3s.Registry) k3d.ClusterCreateOpts {
 	return clusterCreateOpts
 }
 
-// getClusterConfig will get different k3d.Cluster based on ordinal
-func getClusterConfig(ordinal int) k3d.Cluster {
+// getClusterConfig will get different k3d.Cluster based on ordinal and storage arguments
+func getClusterConfig(ordinal int, storage Storage) k3d.Cluster {
 	// All cluster will be created in one docker network
 	universalK3dNetwork := k3d.ClusterNetwork{
 		Name:     fmt.Sprintf("%s-%s", k3dPrefix, configName),
@@ -76,9 +76,12 @@ func getClusterConfig(ordinal int) k3d.Cluster {
 		Image:      "rancher/k3s:latest",
 		ServerOpts: k3d.ServerOpts{},
 	}
-	clusterConfig.Nodes = append(clusterConfig.Nodes, &serverNode)
 
-	// opts
+	// use external storage if set
+	if ordinal == 0 {
+		serverNode.Args = convertStorageToNodeArgs(storage)
+	}
+	clusterConfig.Nodes = append(clusterConfig.Nodes, &serverNode)
 
 	return clusterConfig
 }
@@ -87,4 +90,21 @@ func InfoMirrors(registry k3s.Registry) {
 	for k, e := range registry.Mirrors {
 		klog.Infof("Using registries %s -> %v\n", k, e)
 	}
+}
+
+func convertStorageToNodeArgs(storage Storage) []string {
+	res := []string{}
+	if storage.Endpoint != "" {
+		res = append(res, "--datastore-endpoint="+storage.Endpoint)
+	}
+	if storage.CAFile != "" {
+		res = append(res, "--datastore-cafile="+storage.CAFile)
+	}
+	if storage.CertFile != "" {
+		res = append(res, "--datastore-certfile="+storage.CertFile)
+	}
+	if storage.KeyFile != "" {
+		res = append(res, "--datastore-keyfile="+storage.KeyFile)
+	}
+	return res
 }
