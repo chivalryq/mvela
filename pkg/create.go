@@ -41,14 +41,14 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 		Short: "Create a all-in-one vela environment",
 		Long:  "Create a all-in-one vela image and run it",
 		Run: func(cmd *cobra.Command, args []string) {
-			l.Log().SetLevel(logrus.DebugLevel)
+			l.Log().SetLevel(logrus.InfoLevel)
 
 			// create k3d
-			runConfigs := GetClusterRunConfig(*cmdConfig)
+			runConfigs, err := GetClusterRunConfig(*cmdConfig)
 
 			// Check cluster existence and create all cluster based on flag
 			klog.Infof("Making sure directory exists %s\n", cmdConfig.KubeconfigOpts.Output)
-			err := os.MkdirAll(cmdConfig.KubeconfigOpts.Output, 0o755)
+			err = os.MkdirAll(cmdConfig.KubeconfigOpts.Output, 0o755)
 			if err != nil {
 				klog.ErrorS(err, "Fail to create directory to save kubeconfig")
 			}
@@ -161,10 +161,12 @@ func generateInternal(ctx context.Context, kubeconfigFile string, clusterName st
 }
 
 func printGuide(cfg Config) {
+	fmt.Println()
+	emoji.Fprintln(os.Stdout, ":rocket: Successfully setup KubeVela control plane (and subClusters)")
 	if cfg.KubeconfigOpts.UpdateEnvironment {
-		klog.Infof("Have set KUBECONFIG=%s\n", controlPlaneKubeConf)
+		emoji.Fprintf(os.Stdout, ":pushpin: Have set KUBECONFIG=%s\n", controlPlaneKubeConf)
 	} else {
-		klog.Infof("Set KUBECONFIG=%s\n to connect to cluster", controlPlaneKubeConf)
+		emoji.Fprintf(os.Stdout, ":pushpin: Set KUBECONFIG=%s to connect to cluster\n", controlPlaneKubeConf)
 	}
 
 	emoji.Fprintf(os.Stdout, ":telescope: See usable components, run `vela components`\n")

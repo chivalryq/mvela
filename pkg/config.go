@@ -54,20 +54,24 @@ func ReadConfig(ConfigFile string) (Config, error) {
 		ConfigFile = "example/conf.yaml"
 		klog.Infof("Using config file: %s\n", ConfigFile)
 	}
-	viper.SetConfigFile(ConfigFile)
-	err := bindEnv()
+	// for reading keys with dot
+	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	v.SetConfigFile(ConfigFile)
+	err := bindEnv(v)
 	if err != nil {
 		klog.Error("Fail to bind environment to mvela config")
 	}
-	err = viper.ReadInConfig()
+
+	err = v.ReadInConfig()
 
 	if err != nil {
 		klog.ErrorS(err, "Fail to read config file")
 	}
-	err = viper.Unmarshal(&res)
+
+	err = v.Unmarshal(&res)
 	if err != nil {
-		klog.ErrorS(err, "Fail to unmarshal config file, gonna use default configs")
-		return initDefaultConfig()
+		klog.ErrorS(err, "Fail to unmarshal config file, exiting")
+		os.Exit(1)
 	}
 	reportConf(res)
 
@@ -92,11 +96,15 @@ func getKubeconfigOptions() config.SimpleConfigOptionsKubeconfig {
 	return opts
 }
 
-func GetClusterRunConfig(cmdConfig Config) []config.ClusterConfig {
+func GetClusterRunConfig(cmdConfig Config) ([]config.ClusterConfig, error) {
 	managedCluster := cmdConfig.ManagedCluster
 	runConfigs := []config.ClusterConfig{}
 	for ord := 0; ord < managedCluster; ord++ {
-		cluster := getClusterConfig(ord, cmdConfig.Storage)
+		cluster, err := getClusterConfig(ord, cmdConfig.Storage, cmdConfig.Token)
+		if err != nil {
+			klog.ErrorS(err, "Fail to get cluster config")
+			return nil, err
+		}
 		createOpts := getClusterCreateOpts(cmdConfig.Registries)
 		kubeconfigOpts := getKubeconfigOptions()
 		runConfigs = append(runConfigs, config.ClusterConfig{
@@ -105,17 +113,20 @@ func GetClusterRunConfig(cmdConfig Config) []config.ClusterConfig {
 			KubeconfigOpts:    kubeconfigOpts,
 		})
 	}
-	return runConfigs
+	return runConfigs, nil
 }
 
-func bindEnv() error {
-	if err := viper.BindEnv("storage.endpoint", "DATASTORE_ENDPOINT"); err != nil {
+func bindEnv(v *viper.Viper) error {
+	if err := v.BindEnv("storage::endpoint", "DATASTORE_ENDPOINT"); err != nil {
 		return err
 	}
-	if err := viper.BindEnv("storage.ca_file", "DATASTORE_CAFILE"); err != nil {
+	if err := v.BindEnv("storage::ca_file", "DATASTORE_CAFILE"); err != nil {
 		return err
 	}
-	if err := viper.BindEnv("storage.key_file", "DATASTORE_KEYFILE"); err != nil {
+	if err := v.BindEnv("storage::key_file", "DATASTORE_KEYFILE"); err != nil {
+		return err
+	}
+	if err := v.BindEnv("token", "TOKEN"); err != nil {
 		return err
 	}
 	return nil
