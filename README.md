@@ -2,6 +2,8 @@
 
 a CLI tool for [KubeVela](https://github.com/oam-dev/kubevela) trial
 
+![Demo](./example/demo.gif) 
+
 ## Prerequisites
 
  - docker

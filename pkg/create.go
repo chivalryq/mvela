@@ -13,10 +13,8 @@ import (
 	"github.com/kyokomi/emoji/v2"
 	k3dClient "github.com/rancher/k3d/v5/pkg/client"
 	config "github.com/rancher/k3d/v5/pkg/config/v1alpha4"
-	l "github.com/rancher/k3d/v5/pkg/logger"
 	"github.com/rancher/k3d/v5/pkg/runtimes"
 	k3dTypes "github.com/rancher/k3d/v5/pkg/types"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )
@@ -41,10 +39,11 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 		Short: "Create a all-in-one vela environment",
 		Long:  "Create a all-in-one vela image and run it",
 		Run: func(cmd *cobra.Command, args []string) {
-			l.Log().SetLevel(logrus.InfoLevel)
-
 			// create k3d
 			runConfigs, err := GetClusterRunConfig(*cmdConfig)
+			if err != nil {
+				klog.ErrorS(err, "Fail to get cluster-run configs")
+			}
 
 			// Check cluster existence and create all cluster based on flag
 			klog.Infof("Making sure directory exists %s\n", cmdConfig.KubeconfigOpts.Output)
@@ -64,6 +63,7 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 				// Update KUBECONFIG if control plane
 				if isControlPlane(ord) {
 					if cmdConfig.KubeconfigOpts.UpdateEnvironment {
+						klog.Info("Setting KUBECONFIG to " + KubeConfigOutput)
 						err = os.Setenv("KUBECONFIG", KubeConfigOutput)
 						if err != nil {
 							klog.ErrorS(err, "Fail to set environment var KUBECONFIG")

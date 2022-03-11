@@ -4,10 +4,8 @@ import (
 	"strings"
 
 	k3dClient "github.com/rancher/k3d/v5/pkg/client"
-	l "github.com/rancher/k3d/v5/pkg/logger"
 	"github.com/rancher/k3d/v5/pkg/runtimes"
 	k3d "github.com/rancher/k3d/v5/pkg/types"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )
@@ -18,8 +16,6 @@ func CmdDelete(cmdConfig *Config) *cobra.Command {
 		Short: "Delete all-in-one vela environment",
 		Long:  "Delete all-in-one vela environment",
 		Run: func(cmd *cobra.Command, args []string) {
-			l.Log().SetLevel(logrus.DebugLevel)
-
 			clusterList, err := k3dClient.ClusterList(cmd.Context(), runtimes.SelectedRuntime)
 			if err != nil {
 				klog.ErrorS(err, "Fail to list clusters")

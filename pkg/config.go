@@ -73,7 +73,7 @@ func ReadConfig(ConfigFile string) (Config, error) {
 		klog.ErrorS(err, "Fail to unmarshal config file, exiting")
 		os.Exit(1)
 	}
-	reportConf(res)
+	// reportConf(res)
 
 	return CompleteConfig(res), nil
 }

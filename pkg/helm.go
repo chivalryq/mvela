@@ -122,8 +122,10 @@ func InstallVelaCore(opts HelmOpts) error {
 }
 
 func debug(format string, v ...interface{}) {
-	format = fmt.Sprintf("[debug] %s\n", format)
-	klog.Infof(format, v...)
+	if debugMode {
+		format = fmt.Sprintf("[debug] %s\n", format)
+		klog.Infof(format, v...)
+	}
 }
 
 func chartCachePathForSemver(semver string) string {
