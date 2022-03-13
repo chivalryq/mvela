@@ -62,15 +62,13 @@ func CmdCreate(cmdConfig *Config) *cobra.Command {
 
 				// Update KUBECONFIG if control plane
 				if isControlPlane(ord) {
-					if cmdConfig.KubeconfigOpts.UpdateEnvironment {
-						klog.Info("Setting KUBECONFIG to " + KubeConfigOutput)
-						err = os.Setenv("KUBECONFIG", KubeConfigOutput)
-						if err != nil {
-							klog.ErrorS(err, "Fail to set environment var KUBECONFIG")
-						}
-
-						controlPlaneKubeConf = KubeConfigOutput
+					klog.Info("Setting KUBECONFIG to " + KubeConfigOutput)
+					err = os.Setenv("KUBECONFIG", KubeConfigOutput)
+					if err != nil {
+						klog.ErrorS(err, "Fail to set environment var KUBECONFIG")
 					}
+
+					controlPlaneKubeConf = KubeConfigOutput
 					// install helm chart
 					err = InstallVelaCore(cmdConfig.HelmOpts)
 					if err != nil {
@@ -163,13 +161,8 @@ func generateInternal(ctx context.Context, kubeconfigFile string, clusterName st
 func printGuide(cfg Config) {
 	fmt.Println()
 	emoji.Fprintln(os.Stdout, ":rocket: Successfully setup KubeVela control plane (and subClusters)")
-	if cfg.KubeconfigOpts.UpdateEnvironment {
-		emoji.Fprintf(os.Stdout, ":pushpin: Have set KUBECONFIG=%s\n", controlPlaneKubeConf)
-	} else {
-		emoji.Fprintf(os.Stdout, ":pushpin: Set KUBECONFIG=%s to connect to cluster\n", controlPlaneKubeConf)
-	}
-
-	emoji.Fprintf(os.Stdout, ":telescope: See usable components, run `vela components`\n")
+	emoji.Fprintf(os.Stdout, ":pushpin: First run `export KUBECONFIG=%s` to connect to cluster\n", controlPlaneKubeConf)
+	emoji.Fprintf(os.Stdout, ":telescope: Second run `vela components` to see usable components,\n")
 	if cfg.ManagedCluster > 1 {
 		internalCfg := path.Join(cfg.KubeconfigOpts.Output, "mvela-cluster-1-internal")
 		subCfg := path.Join(cfg.KubeconfigOpts.Output, "mvela-cluster-1")

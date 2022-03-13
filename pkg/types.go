@@ -12,8 +12,7 @@ type Config struct {
 }
 
 type KubeconfigOption struct {
-	Output            string `json:"output" yaml:"output"`
-	UpdateEnvironment bool   `json:"updateEnvironment" yaml:"updateEnvironment"`
+	Output string `json:"output" yaml:"output"`
 }
 
 type HelmOpts struct {

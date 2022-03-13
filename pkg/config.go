@@ -38,8 +38,7 @@ func initDefaultConfig() (Config, error) {
 		Kind:           "Simple",
 		ManagedCluster: 1,
 		KubeconfigOpts: KubeconfigOption{
-			Output:            path.Join(velaDir, "kubeConfig"),
-			UpdateEnvironment: true,
+			Output: path.Join(velaDir, "kubeConfig"),
 		},
 	}, nil
 }
