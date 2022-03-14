@@ -31,6 +31,36 @@ kubeconfigOpts:
   updateEnvironment: true # whether update KUBECONFIG var in your shell
 ```
 
+#### Run with external database
+
+**Note: `token` field or TOKEN environment variable is needed when using external database for connect to DB repeatably** 
+
+When you want keep whole cluster metadata in an external DB, you can create a cluster based on an external DB. You can specify the storage field of configuration like
+
+```yaml
+apiVersion: mvela.oam.dev/v1alpha1
+kind: Simple
+# other fields..
+
+storage:
+  endpoint: mysql://tcp(user:passwd@host:PORT)/DBNAME
+  cert_file: /path/to/client.crt
+  key_file: /path/to/client.key
+token: SECRET
+```
+
+Keep database connection string in shell is more recommended. you can run like:
+
+```shell
+DATASTORE_ENDPOINT=mysql://tcp(user:passwd@host:PORT)/DBNAME TOKEN=SECRET mvela create
+```
+| field in config   | environment var    |
+|--------------- | --------------- |
+| storage.endpoint   | DATASTORE_ENDPOINT   |
+| storage.cert_file   | DATASTORE_CAFILE   |
+| storage   | DATASTORE_KEYFILE   |
+
+For the connection string format, See k3s [doc](https://rancher.com/docs/k3s/latest/en/installation/datastore/#datastore-endpoint-format-and-functionality) 
 
 ## Known Issue
 

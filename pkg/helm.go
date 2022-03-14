@@ -18,7 +18,7 @@ import (
 
 const (
 	VelaCoreChartURLTemp = "https://kubevelacharts.oss-cn-hangzhou.aliyuncs.com/core/vela-core-%s.tgz"
-	DefaultSemver        = "1.2.3"
+	DefaultSemver        = "1.2.4"
 )
 
 var (

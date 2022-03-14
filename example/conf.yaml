@@ -3,12 +3,14 @@ kind: Simple
 managedCluster: 2
 kubeconfigOpts:
   output: /Users/qiaozp/.vela/kubeConfig
-  updateEnvironment: true
+HelmOpts:
+  version: 1.2.4
 registries:
   mirrors:
     docker.io:
       endpoint:
         - "https://hub-mirror.c.163.com"
+        - "https://mirror.baidubce.com"
 #storage:
   #endpoint: mysql://tcp(user:passwd@host:PORT)/DBNAME
   #cert_file: /path/to/client.crt
